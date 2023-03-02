@@ -1,4 +1,4 @@
-name: Deploy MultiDocker
+name: ci
 on:
   push:
     branches:
@@ -17,22 +17,44 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
-
       - run: docker build -t jochri3/react-test -f ./client/Dockerfile.dev ./client
       - run: docker run -e CI=true jochri3/react-test npm test
 
-      - run: docker build -t jochri3/multi-client ./client
-      - run: docker build -t jochri3/multi-nginx ./nginx
-      - run: docker build -t jochri3/multi-server ./server
-      - run: docker build -t jochri3/multi-worker ./worker
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
 
-      - run: docker push jochri3/multi-client
-      - run: docker push jochri3/multi-nginx
-      - run: docker push jochri3/multi-server
-      - run: docker push jochri3/multi-worker
-#
+      - name: Build and push multi-client
+        uses: docker/build-push-action@v4
+        with:
+          context: ./client
+          file: ./Dockerfile
+          push: true
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/multi-client
+
+      - name: Build and push multi-server
+        uses: docker/build-push-action@v4
+        with:
+          context: ./server
+          file: ./Dockerfile
+          push: true
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/multi-server
+
+      - name: Build and push multi-nginx
+        uses: docker/build-push-action@v4
+        with:
+          context: ./nginx
+          file: ./Dockerfile
+          push: true
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/multi-nginx
+
+      - name: Build and push multi-worker
+        uses: docker/build-push-action@v4
+        with:
+          context: ./nginx
+          file: ./Dockerfile
+          push: true
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/multi-worker
+
 #      - name: Generate deployment package
 #        run: zip -r deploy.zip . -x '*.git*'
 #
